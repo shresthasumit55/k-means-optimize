@@ -1,0 +1,21 @@
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o annulus_kmeans.o annulus_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o compare_kmeans.o compare_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o dataset.o dataset.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o drake_kmeans.o drake_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o elkan_kernel_kmeans.o elkan_kernel_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o elkan_kmeans.o elkan_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o general_functions.o general_functions.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o hamerly_kmeans.o hamerly_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o heap_kmeans.o heap_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o kernel_kmeans.o kernel_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o kmeans.o kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o naive_kernel_kmeans.o naive_kernel_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o naive_kmeans.o naive_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o original_space_kmeans.o original_space_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o sort_kmeans.o sort_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o triangle_inequality_base_kmeans.o triangle_inequality_base_kmeans.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o driver-experiment.o driver-experiment.cpp
+g++  -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  -c -o driver-standalone.o driver-standalone.cpp
+ar -cr libkmeans.a annulus_kmeans.o compare_kmeans.o dataset.o drake_kmeans.o elkan_kernel_kmeans.o elkan_kmeans.o general_functions.o hamerly_kmeans.o heap_kmeans.o kernel_kmeans.o kmeans.o naive_kernel_kmeans.o naive_kmeans.o original_space_kmeans.o sort_kmeans.o triangle_inequality_base_kmeans.o
+g++ -L . -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  driver-standalone.o -o driver-standalone -lkmeans
+g++ -L . -Wall -Werror -pedantic -fPIC -g -O3 -Wno-long-long -std=c++11  driver-experiment.o -o driver-experiment -lkmeans
