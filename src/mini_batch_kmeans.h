@@ -17,6 +17,8 @@
 #include "triangle_inequality_base_kmeans.h"
 #include "hamerly_kmeans.h"
 
+//Work in progress
+
 class MiniBatchKMeans : public HamerlyKmeans {
 public:
 
