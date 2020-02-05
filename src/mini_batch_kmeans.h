@@ -17,6 +17,7 @@
 #include "triangle_inequality_base_kmeans.h"
 
 class MiniBatchKMeans : public TriangleInequalityBaseKmeans {
+
 public:
 
     MiniBatchKMeans(int a, int b) {
