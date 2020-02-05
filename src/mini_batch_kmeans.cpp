@@ -35,22 +35,19 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
         batchIndexArray[i] = i;
     }
 
-    // track the number of inner iterations the algorithm performs
-
     for (int run = 0; run < totalMinibatchIterations; run++) {
 
         //Generating a new batch
-
-        //will need to change random generation
+        //need to change random generation
         //fisher yates algorithm to generate batches.
         for (int i = dataSize - 1; i > 0; i--) {
             int j = rand() % (i + 1);
             swap(&batchIndexArray[i], &batchIndexArray[j]);
         }
 
+        //this is the inner iteration which signifies number of times the same batch is run
         iterations = 0;
 
-        //this is the inner iteration
         while ((iterations < maxIterations) && (!converged)) {
 
             ++iterations;
@@ -116,6 +113,8 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
             verifyAssignment(iterations, startNdx, endNdx);
 
+            //updating the centers
+
             int *centerMembersCount = new int[k]{0};
 
             double **oldCenters = new double *[k];
@@ -130,7 +129,6 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                 }
             }
 
-            //updating the centers
             for (int i = 0; i < batchSize; i++) {
                 int c = assignment[batchIndexArray[i]];
                 centerMembersCount[c] = centerMembersCount[c] + 1;
