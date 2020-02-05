@@ -49,6 +49,7 @@
 #include "naive_kernel_kmeans.h"
 #include "elkan_kernel_kmeans.h"
 #include "mini_batch_naive_kmeans.h"
+#include "mini_batch_kmeans.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -208,8 +209,21 @@ int main(int argc, char **argv) {
             algorithm = new AnnulusKmeans();
         } else if (command == "elkan") {
             algorithm = new ElkanKmeans();
+        }else if (command =="minibatch"){
+
+            int batchSize;
+            std::cout<<"Enter minibatch size";
+            std::cin>>batchSize;
+
+            int totalMinibatchIterations;
+            std::cout<<"Enter number of iterations";
+            std::cin>>totalMinibatchIterations;
+            algorithm = new MiniBatchKMeans(batchSize,totalMinibatchIterations);
         } else if (command =="naiveminibatch"){
-            algorithm = new MiniBatchNaiveKmeans();
+            int batchSize;
+            std::cout<<"Enter minibatch size";
+            std::cin>>batchSize;
+            algorithm = new MiniBatchNaiveKmeans(batchSize);
         }else if (command == "drake") {
             // Read the number of bounds
             int b;

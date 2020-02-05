@@ -6,8 +6,6 @@
 #include "general_functions.h"
 #include <cassert>
 #include <cstring>
-#include <map>
-#include <set>
 
 int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
@@ -15,7 +13,14 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
     int startNdx = start(threadId);
     int endNdx = end(threadId);
 
-    int batchSize = 400;
+    const int dataSize=x->n;
+    int *indexArray;
+
+    indexArray = new int[dataSize];
+
+    for (int i=0;i<x->n;i++){
+        indexArray[i] = i;
+    }
 
     // track the number of iterations the algorithm performs
     int iterations = 0;
@@ -25,54 +30,43 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
             ++iterations;
 
             //Generating a new batch
-            std::set<int> miniBatch;
-            std::map<int,int> centresMap;
-            int max = x->n;
-            int batchCount = 0;
 
-            srand(time(0));
-            while (batchCount<batchSize){
-                int currentIndex = (rand() % max);
-                miniBatch.insert(currentIndex);
-                batchCount = miniBatch.size();
+            //will need to change random generation
+            //srand(time(0));
+
+            for (int i=dataSize-1;i>0;i--){
+                int j = rand() % (i+1);
+                swap(&indexArray[i],&indexArray[j]);
             }
 
-            for (int dataIdx:miniBatch) {
+            for (int i=0;i<batchSize;i++) {
 
                 // look for the closest center to this example
                 int closest = 0;
                 double closestDist2 = std::numeric_limits<double>::max();
                 for (int j = 0; j < k; ++j) {
-                    double d2 = pointCenterDist2(dataIdx, j);
+                    double d2 = pointCenterDist2(indexArray[i], j);
                     if (d2 < closestDist2) {
                         closest = j;
                         closestDist2 = d2;
                     }
                 }
-                if (assignment[dataIdx] != closest) {
-                    changeAssignment(dataIdx, closest, threadId);
+                if (assignment[indexArray[i]] != closest) {
+                    changeAssignment(indexArray[i], closest, threadId);
                 }
             }
 
             verifyAssignment(iterations, startNdx, endNdx);
+            int *centerMembersCount = new int[k]{0};
 
+            for (int i=0;i<batchSize;i++){
 
-            for (int dataIdx: miniBatch) {
+                int c = assignment[indexArray[i]];
 
-                int c = assignment[dataIdx];
-
-                std::map<int, int>::iterator iter;
-                iter=centresMap.find(c);
-                int value = 1;
-                if (iter == centresMap.end()) {
-                    centresMap.insert(std::pair<int,int>(c,value));
-                }else {
-                    iter->second = iter->second + 1;
-                    value = iter->second;
-                }
-                double eta = 1/value;
+                centerMembersCount[c] = centerMembersCount[c]+1;
+                double eta = 1/centerMembersCount[c];
                 for (int j=0;j<d;j++){
-                    centers->data[c+j] = (1-eta) * (centers-> data[c + j]) + (eta * x->data[dataIdx + j]);
+                    centers->data[c+j] = (1-eta) * (centers-> data[c + j]) + (eta * x->data[indexArray[i] + j]);
                 }
 
             }
@@ -89,4 +83,10 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
             synchronizeAllThreads();
             return iterations;
 
+}
+
+void MiniBatchNaiveKmeans::swap(int *val1, int *val2){
+    int temp = *val1;
+    *val1 = *val2;
+    *val2 = temp;
 }

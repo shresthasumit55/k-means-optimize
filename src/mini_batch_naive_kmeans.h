@@ -16,10 +16,15 @@
 
 class MiniBatchNaiveKmeans: public NaiveKmeans {
 public:
+    MiniBatchNaiveKmeans(int a) {
+        batchSize = a;
+    }
     virtual std::string getName() const { return "minibatch-naive"; }
     virtual ~MiniBatchNaiveKmeans() { free(); }
 protected:
+    int batchSize;
     virtual int runThread(int threadId, int maxIterations);
+    void swap(int *val1, int *val2);
 
 };
 

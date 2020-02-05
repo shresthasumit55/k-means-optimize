@@ -15,23 +15,28 @@
 #define MINI_BATCH_KMEANS_H
 
 #include "triangle_inequality_base_kmeans.h"
-#include "hamerly_kmeans.h"
 
-class MiniBatchKMeans : public HamerlyKmeans {
+class MiniBatchKMeans : public TriangleInequalityBaseKmeans {
 public:
 
-    MiniBatchKMeans() {
+    MiniBatchKMeans(int a, int b) {
         numLowerBounds = 1;
+        batchSize = a;
+        totalMinibatchIterations = b;
     }
 
-    virtual std::string getName() const {
-        return "mini-batch";
-    }
+    virtual std::string getName() const { return "mini-batch"; }
+    virtual ~MiniBatchKMeans() { free(); }
+
 protected:
+    int batchSize;
+    int totalMinibatchIterations;
+
+    void swap(int *val1, int *val2);
+
+    void update_bounds(int *indexArray);
+
     virtual int runThread(int threadId, int maxIterations);
-    
-
-
 };
 
 #endif /* MINI_BATCH_KMEANS_H */

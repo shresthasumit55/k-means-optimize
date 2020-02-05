@@ -1,8 +1,8 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *
+ * Created by shresthasumit55 on 10/22/19.
  */
+
 #include "mini_batch_kmeans.h"
 #include "general_functions.h"
 #include "hamerly_kmeans.h"
@@ -11,123 +11,213 @@
 #include <vector>
 #include <map>
 
+/*
+ * Bounded mini batch k means using hamerly's bound.
+ */
+
+
 int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
+
     int iterations = 0;
 
     int startNdx = start(threadId);
     int endNdx = end(threadId);
 
+    // int batchSize = 400;
+    //int totalMinibatchIterations = 40;
+    const int dataSize = x->n;
+    int *batchIndexArray;
 
-    std::map<int,int> batchMap;
-    std::map<int, int>::iterator it;
-    int batchSize = 400;
-    int max = x->n;
+    //holds the values for indexes of batches
+    batchIndexArray = new int[dataSize];
 
-    batchMap.insert(std::pair<int, int>(0, 1));
-
-    int i=0;
-    srand(time(0));
-    while (i<batchSize){
-        int currentIndex = (rand() % max);
-        it = batchMap.find(currentIndex);
-        if (it == batchMap.end()){
-            batchMap.insert(std::pair<int,int>(currentIndex,1));
-            i++;
-        }
-
+    for (int i = 0; i < x->n; i++) {
+        batchIndexArray[i] = i;
     }
 
-    while ((iterations < maxIterations) && ! converged) {
-        ++iterations;
+    // track the number of inner iterations the algorithm performs
 
-        // compute the inter-center distances, keeping only the closest distances
-        update_s(threadId);
-        synchronizeAllThreads();
+    for (int run = 0; run < totalMinibatchIterations; run++) {
 
-        // loop over all records
-        for (int i = startNdx; i < endNdx; ++i) {
+        //Generating a new batch
 
-            std::map<int, int>::iterator it;
-            it=batchMap.find(i);
-            if (it == batchMap.end()) {
-                continue;
-            }
-            unsigned short closest = assignment[i];
+        //will need to change random generation
+        //fisher yates algorithm to generate batches.
+        for (int i = dataSize - 1; i > 0; i--) {
+            int j = rand() % (i + 1);
+            swap(&batchIndexArray[i], &batchIndexArray[j]);
+        }
 
-            // if upper[i] is less than the greater of these two, then we can
-            // ignore record i
-            double upper_comparison_bound = std::max(s[closest], lower[i]);
+        iterations = 0;
 
-            // first check: if u(x) <= s(c(x)) or u(x) <= lower(x), then ignore
-            // x, because its closest center must still be closest
-            if (upper[i] <= upper_comparison_bound) {
-                continue;
-            }
+        //this is the inner iteration
+        while ((iterations < maxIterations) && (!converged)) {
 
-            // otherwise, compute the real distance between this record and its
-            // closest center, and update upper
-            double u2 = pointCenterDist2(i, closest);
-            upper[i] = sqrt(u2);
+            ++iterations;
 
-            // if (u(x) <= s(c(x))) or (u(x) <= lower(x)), then ignore x
-            if (upper[i] <= upper_comparison_bound) {
-                continue;
-            }
+            for (int i = 0; i < batchSize; i++) {
+                unsigned short closest = assignment[batchIndexArray[i]];
 
-            // now update the lower bound by looking at all other centers
-            double l2 = std::numeric_limits<double>::max(); // the squared lower bound
-            for (int j = 0; j < k; ++j) {
-                if (j == closest) { continue; }
+                // if upper[i] is less than the greater of these two, then we can
+                // ignore record i
+                double upper_comparison_bound = std::max(s[closest], lower[batchIndexArray[i]]);
 
-                double dist2 = pointCenterDist2(i, j);
+                // first check: if u(x) <= s(c(x)) or u(x) <= lower(x), then ignore
+                // x, because its closest center must still be closest
+                if (upper[batchIndexArray[i]] <= upper_comparison_bound) {
+                    continue;
+                }
 
-                if (dist2 < u2) {
-                    // another center is closer than the current assignment
+                // otherwise, compute the real distance between this record and its
+                // closest center, and update upper
+                double u2 = pointCenterDist2(batchIndexArray[i], closest);
+                upper[batchIndexArray[i]] = sqrt(u2);
 
-                    // change the lower bound to be the current upper bound
-                    // (since the current upper bound is the distance to the
-                    // now-second-closest known center)
-                    l2 = u2;
+                // if (u(x) <= s(c(x))) or (u(x) <= lower(x)), then ignore x
+                if (upper[batchIndexArray[i]] <= upper_comparison_bound) {
+                    continue;
+                }
 
-                    // adjust the upper bound and the current assignment
-                    u2 = dist2;
-                    closest = j;
-                } else if (dist2 < l2) {
-                    // we must reduce the lower bound on the distance to the
-                    // *second* closest center to x[i]
-                    l2 = dist2;
+                // now update the lower bound by looking at all other centers
+                double l2 = std::numeric_limits<double>::max(); // the squared lower bound
+                for (int j = 0; j < k; ++j) {
+                    if (j == closest) { continue; }
+
+                    double dist2 = pointCenterDist2(batchIndexArray[i], j);
+
+                    if (dist2 < u2) {
+                        // another center is closer than the current assignment
+
+                        // change the lower bound to be the current upper bound
+                        // (since the current upper bound is the distance to the
+                        // now-second-closest known center)
+                        l2 = u2;
+
+                        // adjust the upper bound and the current assignment
+                        u2 = dist2;
+                        closest = j;
+                    } else if (dist2 < l2) {
+                        // we must reduce the lower bound on the distance to the
+                        // *second* closest center to x[i]
+                        l2 = dist2;
+                    }
+                }
+
+                // we have been dealing in squared distances; need to convert
+                lower[batchIndexArray[i]] = sqrt(l2);
+
+                // if the assignment for i has changed, then adjust the counts and
+                // locations of each center's accumulated mass
+                if (assignment[batchIndexArray[i]] != closest) {
+                    upper[batchIndexArray[i]] = sqrt(u2);
+                    changeAssignment(batchIndexArray[i], closest, threadId);
                 }
             }
 
-            // we have been dealing in squared distances; need to convert
-            lower[i] = sqrt(l2);
+            verifyAssignment(iterations, startNdx, endNdx);
 
-            // if the assignment for i has changed, then adjust the counts and
-            // locations of each center's accumulated mass
-            if (assignment[i] != closest) {
-                upper[i] = sqrt(u2);
-                changeAssignment(i, closest, threadId);
+            int *centerMembersCount = new int[k]{0};
+
+            double **oldCenters = new double *[k];
+            for (int iter = 0; iter < k; iter++) {
+                oldCenters[iter] = new double[d];
             }
+
+            //saving the old centers
+            for (int iter = 0; iter < k; iter++) {
+                for (int j = 0; j < d; j++) {
+                    oldCenters[iter][j] = centers->data[iter + j];
+                }
+            }
+
+            //updating the centers
+            for (int i = 0; i < batchSize; i++) {
+                int c = assignment[batchIndexArray[i]];
+                centerMembersCount[c] = centerMembersCount[c] + 1;
+                double eta = 1 / centerMembersCount[c];
+                for (int j = 0; j < d; j++) {
+                    centers->data[c + j] = (1 - eta) * (centers->data[c + j]) + (eta * x->data[batchIndexArray[i] + j]);
+                }
+            }
+
+            delete[] centerMembersCount;
+
+            synchronizeAllThreads();
+
+            if (threadId == 0) {
+                //checking whether centers moved
+                int numOfCentersMoved = 0;
+                for (int iter = 0; iter < k; iter++) {
+                    double centersDistance = 0;
+                    for (int j = 0; j < d; j++) {
+                        centersDistance += pow(oldCenters[iter][j] - centers->data[+j], 2);
+                    }
+                    centerMovement[iter] = sqrt(centersDistance);
+                    if (centerMovement[iter] > 0.0001) {
+                        numOfCentersMoved++;
+                    }
+                }
+                converged = (numOfCentersMoved == 0);
+
+                //int furthestMovingCenter = move_centers();
+                //converged = (0.0 == centerMovement[furthestMovingCenter]);
+            }
+
+            if (!converged) {
+                update_bounds(batchIndexArray);
+            }
+
+            synchronizeAllThreads();
+            for (int iter = 0; iter < k; iter++) {
+                delete[] oldCenters[iter];
+            }
+
+            delete[] oldCenters;
+
         }
-
-        verifyAssignment(iterations, startNdx, endNdx);
-
-        // ELKAN 4, 5, AND 6
-        // calculate the new center locations
-        synchronizeAllThreads();
-        if (threadId == 0) {
-            int furthestMovingCenter = move_centers();
-            converged = (0.0 == centerMovement[furthestMovingCenter]);
-        }
-
-        synchronizeAllThreads();
-
-        if (! converged) {
-            HamerlyKmeans::update_bounds(startNdx, endNdx);
-        }
-
-        synchronizeAllThreads();
     }
 
+    delete[] batchIndexArray;
+
+
     return iterations;
+}
+
+void MiniBatchKMeans::update_bounds(int *indexArray) {
+    // int batchSize = 400;
+    double longest = centerMovement[0], secondLongest = (1 < k) ? centerMovement[1] : centerMovement[0];
+    int furthestMovingCenter = 0;
+
+    if (longest < secondLongest) {
+        furthestMovingCenter = 1;
+        std::swap(longest, secondLongest);
+    }
+
+    for (int j = 2; j < k; ++j) {
+        if (longest < centerMovement[j]) {
+            secondLongest = longest;
+            longest = centerMovement[j];
+            furthestMovingCenter = j;
+        } else if (secondLongest < centerMovement[j]) {
+            secondLongest = centerMovement[j];
+        }
+    }
+
+    // update upper/lower bounds
+    for (int i = 0; i < batchSize; i++) {
+        // the upper bound increases by the amount that its center moved
+        upper[indexArray[i]] += centerMovement[assignment[indexArray[i]]];
+
+        // The lower bound decreases by the maximum amount that any center
+        // moved, unless the furthest-moving center is the one it's assigned
+        // to. In the latter case, the lower bound decreases by the amount
+        // of the second-furthest-moving center.
+        lower[indexArray[i]] -= (assignment[indexArray[i]] == furthestMovingCenter) ? secondLongest : longest;
+    }
+}
+
+void MiniBatchKMeans::swap(int *val1, int *val2) {
+    int temp = *val1;
+    *val1 = *val2;
+    *val2 = temp;
 }
