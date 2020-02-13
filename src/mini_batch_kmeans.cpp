@@ -51,27 +51,30 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
         while ((iterations < maxIterations) && (!converged)) {
 
             ++iterations;
+            int dataIndex;
 
             for (int i = 0; i < batchSize; i++) {
-                unsigned short closest = assignment[batchIndexArray[i]];
+                dataIndex = batchIndexArray[i];
+
+                unsigned short closest = assignment[dataIndex];
 
                 // if upper[i] is less than the greater of these two, then we can
                 // ignore record i
-                double upper_comparison_bound = std::max(s[closest], lower[batchIndexArray[i]]);
+                double upper_comparison_bound = std::max(s[closest], lower[dataIndex]);
 
                 // first check: if u(x) <= s(c(x)) or u(x) <= lower(x), then ignore
                 // x, because its closest center must still be closest
-                if (upper[batchIndexArray[i]] <= upper_comparison_bound) {
+                if (upper[dataIndex] <= upper_comparison_bound) {
                     continue;
                 }
 
                 // otherwise, compute the real distance between this record and its
                 // closest center, and update upper
-                double u2 = pointCenterDist2(batchIndexArray[i], closest);
-                upper[batchIndexArray[i]] = sqrt(u2);
+                double u2 = pointCenterDist2(dataIndex, closest);
+                upper[dataIndex] = sqrt(u2);
 
                 // if (u(x) <= s(c(x))) or (u(x) <= lower(x)), then ignore x
-                if (upper[batchIndexArray[i]] <= upper_comparison_bound) {
+                if (upper[dataIndex] <= upper_comparison_bound) {
                     continue;
                 }
 
@@ -80,7 +83,7 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                 for (int j = 0; j < k; ++j) {
                     if (j == closest) { continue; }
 
-                    double dist2 = pointCenterDist2(batchIndexArray[i], j);
+                    double dist2 = pointCenterDist2(dataIndex, j);
 
                     if (dist2 < u2) {
                         // another center is closer than the current assignment
@@ -101,13 +104,13 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                 }
 
                 // we have been dealing in squared distances; need to convert
-                lower[batchIndexArray[i]] = sqrt(l2);
+                lower[dataIndex] = sqrt(l2);
 
                 // if the assignment for i has changed, then adjust the counts and
                 // locations of each center's accumulated mass
-                if (assignment[batchIndexArray[i]] != closest) {
-                    upper[batchIndexArray[i]] = sqrt(u2);
-                    changeAssignment(batchIndexArray[i], closest, threadId);
+                if (assignment[dataIndex] != closest) {
+                    upper[dataIndex] = sqrt(u2);
+                    changeAssignment(dataIndex, closest, threadId);
                 }
             }
 
@@ -130,11 +133,12 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
             }
 
             for (int i = 0; i < batchSize; i++) {
-                int c = assignment[batchIndexArray[i]];
+                dataIndex = batchIndexArray[i];
+                int c = assignment[dataIndex];
                 centerMembersCount[c] = centerMembersCount[c] + 1;
                 double eta = 1 / centerMembersCount[c];
                 for (int j = 0; j < d; j++) {
-                    centers->data[c + j] = (1 - eta) * (centers->data[c + j]) + (eta * x->data[batchIndexArray[i] + j]);
+                    centers->data[c + j] = (1 - eta) * (centers->data[c + j]) + (eta * x->data[dataIndex + j]);
                 }
             }
 
@@ -202,15 +206,17 @@ void MiniBatchKMeans::update_bounds(int *indexArray) {
     }
 
     // update upper/lower bounds
+    int dataIndex;
     for (int i = 0; i < batchSize; i++) {
+        dataIndex = indexArray[i];
         // the upper bound increases by the amount that its center moved
-        upper[indexArray[i]] += centerMovement[assignment[indexArray[i]]];
+        upper[indexArray[i]] += centerMovement[assignment[dataIndex]];
 
         // The lower bound decreases by the maximum amount that any center
         // moved, unless the furthest-moving center is the one it's assigned
         // to. In the latter case, the lower bound decreases by the amount
         // of the second-furthest-moving center.
-        lower[indexArray[i]] -= (assignment[indexArray[i]] == furthestMovingCenter) ? secondLongest : longest;
+        lower[dataIndex] -= (assignment[dataIndex] == furthestMovingCenter) ? secondLongest : longest;
     }
 }
 
