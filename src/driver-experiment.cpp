@@ -210,18 +210,16 @@ int main(int argc, char **argv) {
         } else if (command == "elkan") {
             algorithm = new ElkanKmeans();
         }else if (command =="minibatch"){
-
             int batchSize;
-            std::cout<<"Enter minibatch size";
+            std::cout<<"Enter minibatch size \n";
             std::cin>>batchSize;
-
             int totalMinibatchIterations;
-            std::cout<<"Enter number of iterations";
+            std::cout<<"Enter number of iterations \n";
             std::cin>>totalMinibatchIterations;
             algorithm = new MiniBatchKMeans(batchSize,totalMinibatchIterations);
         } else if (command =="naiveminibatch"){
             int batchSize;
-            std::cout<<"Enter minibatch size";
+            std::cout<<"Enter minibatch size \n";
             std::cin>>batchSize;
             algorithm = new MiniBatchNaiveKmeans(batchSize);
         }else if (command == "drake") {
@@ -354,6 +352,7 @@ void execute(std::string command, Kmeans *algorithm, Dataset const *x, unsigned 
 
     // Make a working copy of the set of centers
     unsigned short *workingAssignment = outAssignment ? outAssignment : new unsigned short[x->n];
+
     std::copy(assignment, assignment + x->n, workingAssignment);
 
     // Time the execution and get the number of iterations
@@ -361,6 +360,7 @@ void execute(std::string command, Kmeans *algorithm, Dataset const *x, unsigned 
     double start_clustering_wall_time = get_wall_time();
     algorithm->initialize(x, k, workingAssignment, numThreads);
     int iterations = algorithm->run(maxIterations);
+
 
     if (outCenters) {
         // try to grab the centers, if they exist

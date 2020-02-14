@@ -24,16 +24,16 @@ public:
         numLowerBounds = 1;
         batchSize = a;
         totalMinibatchIterations = b;
+        //std::cout<<"in mini constructor";
     }
 
     virtual std::string getName() const { return "mini-batch"; }
+
     virtual ~MiniBatchKMeans() { free(); }
 
 protected:
     int batchSize;
     int totalMinibatchIterations;
-
-    void swap(int *val1, int *val2);
 
     void update_bounds(int *indexArray);
 
