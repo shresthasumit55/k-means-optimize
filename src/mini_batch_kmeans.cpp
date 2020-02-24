@@ -140,7 +140,7 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                 dataIndex = batchIndexArray[i];
                 int c = assignment[dataIndex];
                 centerMembersCount[c] = centerMembersCount[c] + 1;
-                double eta = (double)1 / (double)centerMembersCount[c];
+                double eta = (double)1 / centerMembersCount[c];
                 for (int j = 0; j < d; j++) {
                     centers->data[c + j] = (1 - eta) * centers->data[c + j] + eta * x->data[dataIndex + j];
                 }
