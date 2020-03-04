@@ -18,7 +18,7 @@ public:
         //std::cout<<"inside naive";
     }
 
-    virtual std::string getName() const { return "minibatch-naive"; }
+    virtual std::string getName() const { return "minibatchnaive"; }
 
     virtual ~MiniBatchNaiveKmeans() { free(); }
 

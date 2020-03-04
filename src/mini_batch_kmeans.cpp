@@ -18,12 +18,14 @@
 
 int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
-    //maxIterations = 100;
+    // this is the inner iteration -> the number of times same batch is reused
+    maxIterations = 20;
 
     int iterations = 0;
 
-    int startNdx = start(threadId);
-    int endNdx = end(threadId);
+
+    //int startNdx = start(threadId);
+    //int endNdx = end(threadId);
 
     // int batchSize = 400;
     //int totalMinibatchIterations = 40;
@@ -39,15 +41,11 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
     int *centerMembersCount = new int[k]{0};
 
-    double **oldCenters = new double *[k];
-    for (int iter = 0; iter < k; iter++) {
-        oldCenters[iter] = new double[d];
-    }
+    Dataset *oldCenters = new Dataset(k, x->d);
 
     for (int run = 0; run < totalMinibatchIterations; run++) {
 
         //Generating a new batch
-        //need to change random generation
         //fisher yates algorithm to generate batches.
         for (int i = dataSize - 1; i > 0; i--) {
             int j = rand() % (i + 1);
@@ -123,7 +121,7 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                 }
             }
 
-            verifyAssignment(iterations, startNdx, endNdx);
+            //verifyAssignment(iterations, startNdx, endNdx);
 
             //updating the centers
 
@@ -132,7 +130,7 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
             //saving the old centers
             for (int iter = 0; iter < k; iter++) {
                 for (int j = 0; j < d; j++) {
-                    oldCenters[iter][j] = centers->data[iter + j];
+                    oldCenters->data[iter + j] = centers->data[iter + j];
                 }
             }
 
@@ -147,10 +145,11 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
             }
 
 
-            synchronizeAllThreads();
+            //synchronizeAllThreads();
 
             if (threadId == 0) {
                 //checking whether centers moved
+                /*
                 converged = true;
                 for (int iter = 0; iter < k; iter++) {
                     double centersDistance = 0;
@@ -163,27 +162,24 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                         converged = false;
                     }
                     centerMovement[iter] = sqrt(centersDistance);
-                }
+                }*/
 
-                //int furthestMovingCenter = move_centers();
-                //converged = (0.0 == centerMovement[furthestMovingCenter]);
+                int furthestMovingCenter = move_centers();
+                converged = (0.0 == centerMovement[furthestMovingCenter]);
             }
 
             if (!converged) {
                 update_bounds(batchIndexArray);
             }
 
-            synchronizeAllThreads();
+            //synchronizeAllThreads();
 
 
         }
     }
 
-    for (int iter = 0; iter < k; iter++) {
-        delete[] oldCenters[iter];
-    }
 
-    delete[] oldCenters;
+    delete oldCenters;
 
     delete[] centerMembersCount;
 

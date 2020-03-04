@@ -11,8 +11,12 @@
 
 int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
-    int startNdx = start(threadId);
-    int endNdx = end(threadId);
+    maxIterations = 175;
+    //std::cout<<"Initial sse"<<getSSE();
+
+    //int startNdx = start(threadId);
+    //int endNdx = end(threadId);
+
 
     const int dataSize = x->n;
     int *indexArray;
@@ -29,10 +33,7 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
     int *centerMembersCount = new int[k]{0};
 
-    double **oldCenters = new double *[k];
-    for (int iter = 0; iter < k; iter++) {
-        oldCenters[iter] = new double[d];
-    }
+    Dataset *oldCenters = new Dataset(k, x->d);
 
     while ((iterations < maxIterations) && (!converged)) {
 
@@ -43,10 +44,12 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
         //will need to change random generation
         //srand(time(0));
 
+        //shuffling the array
         for (int i = dataSize - 1; i > 0; i--) {
             int j = rand() % (i + 1);
             std::swap(indexArray[i], indexArray[j]);
         }
+
 
         for (int i = 0; i < batchSize; i++) {
 
@@ -65,55 +68,59 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
             }
         }
 
-        verifyAssignment(iterations, startNdx, endNdx);
+        //verifyAssignment(iterations, startNdx, endNdx);
         //updating the centers
 
 
 
-        //saving the old centers
+        //saving the old centers, check if we can directly assign it
         for (int iter = 0; iter < k; iter++) {
             for (int j = 0; j < d; j++) {
-                oldCenters[iter][j] = centers->data[iter + j];
+                oldCenters->data[iter + j] = centers->data[iter + j];
             }
         }
 
+        //updating the centers
         for (int i = 0; i < batchSize; i++) {
 
             int c = assignment[indexArray[i]];
-
             centerMembersCount[c] = centerMembersCount[c] + 1;
-            double eta = 1 / centerMembersCount[c];
+            double eta = (double)1 / centerMembersCount[c];
             for (int j = 0; j < d; j++) {
-                centers->data[c + j] = (1 - eta) * (centers->data[c + j]) + (eta * x->data[indexArray[i] + j]);
+                centers->data[c + j] = (1 - eta) * centers->data[c + j] + eta * x->data[indexArray[i] + j];
             }
 
         }
 
 
-        synchronizeAllThreads();
+        //synchronizeAllThreads();
 
         if (threadId == 0) {
+                int furthestMovingCenter = move_centers();
+                converged = (0.0 == centerMovement[furthestMovingCenter]);
+
+
+            /*
             //checking whether centers moved
             for (int iter = 0; iter < k; iter++) {
                 double centersDistance = 0;
                 for (int j = 0; j < d; j++) {
-                    double delta = (oldCenters[iter][j] - centers->data[iter + j]);
+                    double delta = (*oldCenters)(iter, j) - (*centers)(iter, j);
+                    //double delta = oldCenters->data[iter+j] - centers->data[iter + j];
                     double delta2 = delta * delta;
                     centersDistance += delta2;
                 }
                 centerMovement[iter] = sqrt(centersDistance);
             }
+             */
         }
 
-        synchronizeAllThreads();
+        //synchronizeAllThreads();
 
     }
+
     delete[] centerMembersCount;
-    for (int iter = 0; iter < k; iter++) {
-        delete[] oldCenters[iter];
-    }
-
-    delete[] oldCenters;
+    delete oldCenters;
     return iterations;
 
 }
