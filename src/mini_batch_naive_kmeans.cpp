@@ -81,6 +81,7 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
         }
 
         //updating the centers
+        /*
         for (int i = 0; i < batchSize; i++) {
 
             int c = assignment[indexArray[i]];
@@ -94,16 +95,21 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
         }
 
+        for (int i=0;i<k;i++){
+            centerMembersCount[i] = 0;
+        }*/
+
 
         //synchronizeAllThreads();
 
         if (threadId == 0) {
-               // int furthestMovingCenter = move_centers();
-                //converged = (0.0 == centerMovement[furthestMovingCenter]);
+                int furthestMovingCenter = move_centers();
+                converged = (0.0 == centerMovement[furthestMovingCenter]);
 
-
+                /*
 
             //checking whether centers moved
+            converged = true;
             for (int iter = 0; iter < k; iter++) {
                 double centersDistance = 0;
                 for (int j = 0; j < d; j++) {
@@ -113,9 +119,16 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
                     centersDistance += delta2;
                 }
                 centerMovement[iter] = sqrt(centersDistance);
+                if (centerMovement[iter]>0) {
+                    converged = false;
+                    break;
+                }
             }
+            */
 
         }
+
+
 
         //synchronizeAllThreads();
 
