@@ -19,7 +19,7 @@
 int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
     // this is the inner iteration -> the number of times same batch is reused
-    maxIterations = 20;
+    //maxIterations = 20;
 
     int iterations = 0;
 

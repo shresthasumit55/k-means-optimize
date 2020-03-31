@@ -11,7 +11,7 @@
 
 int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
-    maxIterations = 175;
+    //maxIterations = 175;
     //std::cout<<"Initial sse"<<getSSE();
 
     //int startNdx = start(threadId);
@@ -87,7 +87,9 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
             centerMembersCount[c] = centerMembersCount[c] + 1;
             double eta = (double)1 / centerMembersCount[c];
             for (int j = 0; j < d; j++) {
-                centers->data[c + j] = (1 - eta) * centers->data[c + j] + eta * x->data[indexArray[i] + j];
+                (*centers)(c,j) = (1 - eta) * (*centers)(c,j) + eta * x->data[indexArray[i] + j];
+
+                //centers->data[c + j] = (1 - eta) * centers->data[c + j] + eta * x->data[indexArray[i] + j];
             }
 
         }
@@ -96,11 +98,11 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
         //synchronizeAllThreads();
 
         if (threadId == 0) {
-                int furthestMovingCenter = move_centers();
-                converged = (0.0 == centerMovement[furthestMovingCenter]);
+               // int furthestMovingCenter = move_centers();
+                //converged = (0.0 == centerMovement[furthestMovingCenter]);
 
 
-            /*
+
             //checking whether centers moved
             for (int iter = 0; iter < k; iter++) {
                 double centersDistance = 0;
@@ -112,7 +114,7 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
                 }
                 centerMovement[iter] = sqrt(centersDistance);
             }
-             */
+
         }
 
         //synchronizeAllThreads();
