@@ -11,14 +11,13 @@
 
 int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
-    //maxIterations = 175;
-    //std::cout<<"Initial sse"<<getSSE();
 
-    //int startNdx = start(threadId);
-    //int endNdx = end(threadId);
+   // int startNdx = start(threadId);
+   // int endNdx = end(threadId);
 
 
     const int dataSize = x->n;
+    const int dimensions = x->d;
     int *indexArray;
 
     indexArray = new int[dataSize];
@@ -26,7 +25,6 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
     for (int i = 0; i < x->n; i++) {
         indexArray[i] = i;
     }
-    //maxIterations = 100;
 
     // track the number of iterations the algorithm performs
     int iterations = 0;
@@ -35,21 +33,13 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
     Dataset *oldCenters = new Dataset(k, x->d);
 
-    while ((iterations < maxIterations) && (!converged)) {
+    while ((iterations < maxIterations)) {
 
         ++iterations;
 
         //Generating a new batch
-
-        //will need to change random generation
-        //srand(time(0));
-
         //shuffling the array
-        for (int i = dataSize - 1; i > 0; i--) {
-            int j = rand() % (i + 1);
-            std::swap(indexArray[i], indexArray[j]);
-        }
-
+        shuffleArray(dataSize,indexArray);
 
         for (int i = 0; i < batchSize; i++) {
 
@@ -69,68 +59,26 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
         }
 
         //verifyAssignment(iterations, startNdx, endNdx);
+
+        synchronizeAllThreads();
+
+
         //updating the centers
 
-
-
-        //saving the old centers, check if we can directly assign it
-        for (int iter = 0; iter < k; iter++) {
-            for (int j = 0; j < d; j++) {
-                oldCenters->data[iter + j] = centers->data[iter + j];
-            }
-        }
-
-        //updating the centers
-        /*
         for (int i = 0; i < batchSize; i++) {
 
-            int c = assignment[indexArray[i]];
+            int dataIdx = indexArray[i];
+            int c = assignment[dataIdx];
             centerMembersCount[c] = centerMembersCount[c] + 1;
             double eta = (double)1 / centerMembersCount[c];
-            for (int j = 0; j < d; j++) {
-                (*centers)(c,j) = (1 - eta) * (*centers)(c,j) + eta * x->data[indexArray[i] + j];
-
-                //centers->data[c + j] = (1 - eta) * centers->data[c + j] + eta * x->data[indexArray[i] + j];
+            for (int j = 0; j < dimensions; j++) {
+                //(*centers)(c,j) = (1 - eta) * (*centers)(c,j) + eta * x->data[indexArray[i] + j];
+                centers->data[c*dimensions + j] = (1 - eta) * centers->data[c * dimensions + j] + eta * x->data[dataIdx * dimensions + j];
             }
 
         }
 
-        for (int i=0;i<k;i++){
-            centerMembersCount[i] = 0;
-        }*/
-
-
-        //synchronizeAllThreads();
-
-        if (threadId == 0) {
-                int furthestMovingCenter = move_centers();
-                converged = (0.0 == centerMovement[furthestMovingCenter]);
-
-                /*
-
-            //checking whether centers moved
-            converged = true;
-            for (int iter = 0; iter < k; iter++) {
-                double centersDistance = 0;
-                for (int j = 0; j < d; j++) {
-                    double delta = (*oldCenters)(iter, j) - (*centers)(iter, j);
-                    //double delta = oldCenters->data[iter+j] - centers->data[iter + j];
-                    double delta2 = delta * delta;
-                    centersDistance += delta2;
-                }
-                centerMovement[iter] = sqrt(centersDistance);
-                if (centerMovement[iter]>0) {
-                    converged = false;
-                    break;
-                }
-            }
-            */
-
-        }
-
-
-
-        //synchronizeAllThreads();
+        synchronizeAllThreads();
 
     }
 
@@ -138,5 +86,13 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
     delete oldCenters;
     return iterations;
 
+}
+
+void MiniBatchNaiveKmeans::shuffleArray(int dataSize,int *indexArray){
+
+    for (int i=0;i<batchSize;i++){
+        int j = i + (rand() % (dataSize-i));
+        std::swap(indexArray[i],indexArray[j]);
+    }
 }
 

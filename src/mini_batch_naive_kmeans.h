@@ -27,6 +27,8 @@ protected:
 
     virtual int runThread(int threadId, int maxIterations);
 
+    void shuffleArray(int dataSize,int *indexArray);
+
 };
 
 

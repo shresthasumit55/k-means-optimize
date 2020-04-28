@@ -18,17 +18,13 @@
 
 int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
-    // this is the inner iteration -> the number of times same batch is reused
-    //maxIterations = 20;
-
     int iterations = 0;
 
 
     //int startNdx = start(threadId);
     //int endNdx = end(threadId);
 
-    // int batchSize = 400;
-    //int totalMinibatchIterations = 40;
+
     const int dataSize = x->n;
     int *batchIndexArray;
 
@@ -43,20 +39,24 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
     Dataset *oldCenters = new Dataset(k, x->d);
 
-    for (int run = 0; run < totalMinibatchIterations; run++) {
+    int iterationCount = 0;
+    int run;
+    for (run = 0; run < totalMinibatchIterations; run++) {
 
-        //Generating a new batch
         //fisher yates algorithm to generate batches.
-        for (int i = dataSize - 1; i > 0; i--) {
-            int j = rand() % (i + 1);
-            std::swap(batchIndexArray[i], batchIndexArray[j]);
+        for (int i=0;i<batchSize;i++){
+            int j = i + (rand() % (dataSize-i));
+            std::swap(batchIndexArray[i],batchIndexArray[j]);
         }
 
-        //this is the inner iteration which signifies number of times the same batch is run
+        converged = false;
+
+
+        //this is the inner iteration which denotes number of times the same batch is run
         iterations = 0;
 
         while ((iterations < maxIterations) && (!converged)) {
-
+            iterationCount++;
             ++iterations;
             int dataIndex;
 
@@ -125,9 +125,8 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
             //updating the centers
 
-
-
             //saving the old centers
+            /*
             for (int iter = 0; iter < k; iter++) {
                 for (int j = 0; j < d; j++) {
                     oldCenters->data[iter + j] = centers->data[iter + j];
@@ -143,6 +142,7 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                     centers->data[c + j] = (1 - eta) * centers->data[c + j] + eta * x->data[dataIndex + j];
                 }
             }
+             */
 
 
             //synchronizeAllThreads();
@@ -166,17 +166,21 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
                 int furthestMovingCenter = move_centers();
                 converged = (0.0 == centerMovement[furthestMovingCenter]);
+                if (converged)
+                    std::cout<<"converged";
             }
 
             if (!converged) {
                 update_bounds(batchIndexArray);
             }
 
-            //synchronizeAllThreads();
+            synchronizeAllThreads();
 
 
         }
     }
+
+    std::cout<<"Num of iters: "<<iterationCount<<"\n";
 
 
     delete oldCenters;
