@@ -121,13 +121,14 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
             synchronizeAllThreads();
 
-/*
+
             for (int i = 0; i < batchSize; i++) {
 
                 int dataIdx = batchIndexArray[i];
                 int c = assignment[dataIdx];
                 centerMembersCount[c] = centerMembersCount[c] + 1;
-                double eta = (double)1 / (centerMembersCount[c] * maxIterations);
+                double eta = (double)1 / centerMembersCount[c];
+                //double eta = (double)1 / (centerMembersCount[c] * maxIterations);
                 for (int j = 0; j < d; j++) {
                     //(*centers)(c,j) = (1 - eta) * (*centers)(c,j) + eta * x->data[indexArray[i] + j];
                     centers->data[c*d + j] = (1 - eta) * centers->data[c * d + j] + eta * x->data[dataIdx * d + j];
@@ -135,15 +136,15 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
             }
 
-            */
 
 
+            /*
             if (threadId == 0) {
                 //checking whether centers moved
                 int furthestMovingCenter = move_centers();
                 converged = (0.0 == centerMovement[furthestMovingCenter]);
             }
-
+            */
 
             if (!converged) {
                 update_bounds(batchIndexArray);
