@@ -12,8 +12,8 @@
 int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
 
-   // int startNdx = start(threadId);
-   // int endNdx = end(threadId);
+    int startNdx = start(threadId);
+    int endNdx = end(threadId);
 
 
     const int dataSize = x->n;
@@ -33,13 +33,18 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
 
     Dataset *oldCenters = new Dataset(k, x->d);
 
-    while ((iterations < maxIterations)) {
+    while ((iterations < numberOfIterations)) {
 
         ++iterations;
 
         //Generating a new batch
         //shuffling the array
-        shuffleArray(dataSize,indexArray);
+        for (int i=0;i<batchSize;i++){
+            int j = i + (rand() % (dataSize-i));
+            std::swap(indexArray[i],indexArray[j]);
+        }
+
+
 
         for (int i = 0; i < batchSize; i++) {
 
@@ -58,7 +63,7 @@ int MiniBatchNaiveKmeans::runThread(int threadId, int maxIterations) {
             }
         }
 
-        //verifyAssignment(iterations, startNdx, endNdx);
+        verifyAssignment(iterations, startNdx, endNdx);
 
         synchronizeAllThreads();
 

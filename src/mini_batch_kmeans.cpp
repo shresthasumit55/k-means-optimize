@@ -21,8 +21,8 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
     int iterations = 0;
 
 
-    //int startNdx = start(threadId);
-    //int endNdx = end(threadId);
+    int startNdx = start(threadId);
+    int endNdx = end(threadId);
 
 
     const int dataSize = x->n;
@@ -39,9 +39,7 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
     Dataset *oldCenters = new Dataset(k, x->d);
 
-    int iterationCount = 0;
-    int run;
-    for (run = 0; run < totalMinibatchIterations; run++) {
+    for (int run = 0; run < totalMinibatchIterations; run++) {
 
         //fisher yates algorithm to generate batches.
         for (int i=0;i<batchSize;i++){
@@ -51,12 +49,10 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
         converged = false;
 
-
         //this is the inner iteration which denotes number of times the same batch is run
         iterations = 0;
 
         while ((iterations < maxIterations) && (!converged)) {
-            iterationCount++;
             ++iterations;
             int dataIndex;
 
@@ -121,66 +117,47 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                 }
             }
 
-            //verifyAssignment(iterations, startNdx, endNdx);
+            verifyAssignment(iterations, startNdx, endNdx);
 
-            //updating the centers
+            synchronizeAllThreads();
 
-            //saving the old centers
-            /*
-            for (int iter = 0; iter < k; iter++) {
-                for (int j = 0; j < d; j++) {
-                    oldCenters->data[iter + j] = centers->data[iter + j];
-                }
-            }
-
+/*
             for (int i = 0; i < batchSize; i++) {
-                dataIndex = batchIndexArray[i];
-                int c = assignment[dataIndex];
+
+                int dataIdx = batchIndexArray[i];
+                int c = assignment[dataIdx];
                 centerMembersCount[c] = centerMembersCount[c] + 1;
-                double eta = (double)1 / centerMembersCount[c];
+                double eta = (double)1 / (centerMembersCount[c] * maxIterations);
                 for (int j = 0; j < d; j++) {
-                    centers->data[c + j] = (1 - eta) * centers->data[c + j] + eta * x->data[dataIndex + j];
+                    //(*centers)(c,j) = (1 - eta) * (*centers)(c,j) + eta * x->data[indexArray[i] + j];
+                    centers->data[c*d + j] = (1 - eta) * centers->data[c * d + j] + eta * x->data[dataIdx * d + j];
                 }
+
             }
-             */
 
+            */
 
-            //synchronizeAllThreads();
 
             if (threadId == 0) {
                 //checking whether centers moved
-                /*
-                converged = true;
-                for (int iter = 0; iter < k; iter++) {
-                    double centersDistance = 0;
-                    for (int j = 0; j < d; j++) {
-                        double delta = (oldCenters[iter][j] - centers->data[iter + j]);
-                        double delta2 = delta * delta;
-                        centersDistance += delta2;
-                    }
-                    if (centersDistance != 0) {
-                        converged = false;
-                    }
-                    centerMovement[iter] = sqrt(centersDistance);
-                }*/
-
                 int furthestMovingCenter = move_centers();
                 converged = (0.0 == centerMovement[furthestMovingCenter]);
-                if (converged)
-                    std::cout<<"converged";
             }
+
 
             if (!converged) {
                 update_bounds(batchIndexArray);
             }
 
+
             synchronizeAllThreads();
 
 
         }
-    }
+        //std::cout<<iterations<<" , ";
 
-    std::cout<<"Num of iters: "<<iterationCount<<"\n";
+    }
+    std::cout<<"\n \n ";
 
 
     delete oldCenters;
@@ -218,7 +195,7 @@ void MiniBatchKMeans::update_bounds(int *indexArray) {
     for (int i = 0; i < batchSize; i++) {
         dataIndex = indexArray[i];
         // the upper bound increases by the amount that its center moved
-        upper[indexArray[i]] += centerMovement[assignment[dataIndex]];
+        upper[dataIndex] += centerMovement[assignment[dataIndex]];
 
         // The lower bound decreases by the maximum amount that any center
         // moved, unless the furthest-moving center is the one it's assigned

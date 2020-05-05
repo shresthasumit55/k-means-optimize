@@ -13,8 +13,10 @@
 
 class MiniBatchNaiveKmeans : public TriangleInequalityBaseKmeans {
 public:
-    MiniBatchNaiveKmeans(int size) {
+    MiniBatchNaiveKmeans(int size, int numIterations) {
         batchSize = size;
+        numberOfIterations = numIterations;
+
         //std::cout<<"inside naive";
     }
 
@@ -24,6 +26,7 @@ public:
 
 protected:
     int batchSize;
+    int numberOfIterations;
 
     virtual int runThread(int threadId, int maxIterations);
 

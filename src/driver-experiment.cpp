@@ -218,7 +218,9 @@ int main(int argc, char **argv) {
         } else if (command =="naiveminibatch"){
             int batchSize;
             std::cin>>batchSize;
-            algorithm = new MiniBatchNaiveKmeans(batchSize);
+            int numberOfIterations;
+            std::cin>>numberOfIterations;
+            algorithm = new MiniBatchNaiveKmeans(batchSize,numberOfIterations);
         }else if (command == "drake") {
             // Read the number of bounds
             int b;
