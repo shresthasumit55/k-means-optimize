@@ -10,6 +10,7 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <fstream>
 
 /*
  * Bounded mini batch k means using hamerly's bound.
@@ -18,11 +19,13 @@
 
 int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
-    int iterations = 0;
+    std::ofstream centersFile;
+
+    int iterations=0;
 
 
-    int startNdx = start(threadId);
-    int endNdx = end(threadId);
+    //int startNdx = start(threadId);
+    //int endNdx = end(threadId);
 
 
     const int dataSize = x->n;
@@ -35,11 +38,16 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
         batchIndexArray[i] = i;
     }
 
-    int *centerMembersCount = new int[k]{0};
+    double *centerMembersCount = new double[k]{0};
 
     Dataset *oldCenters = new Dataset(k, x->d);
 
+    centersFile.open ("centersAll.txt");
+    centersFile<<k<<"\n";
+
     for (int run = 0; run < totalMinibatchIterations; run++) {
+
+        centersFile<<run+1<<"\n";
 
         //fisher yates algorithm to generate batches.
         for (int i=0;i<batchSize;i++){
@@ -117,7 +125,7 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
                 }
             }
 
-            verifyAssignment(iterations, startNdx, endNdx);
+            //verifyAssignment(iterations, startNdx, endNdx);
 
             synchronizeAllThreads();
 
@@ -126,9 +134,8 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
                 int dataIdx = batchIndexArray[i];
                 int c = assignment[dataIdx];
-                centerMembersCount[c] = centerMembersCount[c] + 1;
+                centerMembersCount[c] = centerMembersCount[c] + (double)1/maxIterations;
                 double eta = (double)1 / centerMembersCount[c];
-                //double eta = (double)1 / (centerMembersCount[c] * maxIterations);
                 for (int j = 0; j < d; j++) {
                     //(*centers)(c,j) = (1 - eta) * (*centers)(c,j) + eta * x->data[indexArray[i] + j];
                     centers->data[c*d + j] = (1 - eta) * centers->data[c * d + j] + eta * x->data[dataIdx * d + j];
@@ -136,15 +143,13 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
             }
 
-
-
-            /*
+/*
             if (threadId == 0) {
                 //checking whether centers moved
                 int furthestMovingCenter = move_centers();
                 converged = (0.0 == centerMovement[furthestMovingCenter]);
             }
-            */
+*/
 
             if (!converged) {
                 update_bounds(batchIndexArray);
@@ -155,9 +160,20 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
 
         }
+
+        //sending centers to a file
+        for (int i=0;i<k;i++){
+            for (int j=0;j<d;j++){
+                centersFile<<centers->data[i*d + j];
+                if (j!=d-1)
+                    centersFile<<",";
+            }
+            centersFile<<"\n";
+        }
         //std::cout<<iterations<<" , ";
 
     }
+    centersFile.close();
     std::cout<<"\n \n ";
 
 
