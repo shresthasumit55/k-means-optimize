@@ -19,18 +19,16 @@
 
 int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
-    std::ofstream centersFile;
+    if (totalMinibatchIterations == 0) {
+        return 0;
+    }
 
-    int iterations=0;
-
-
+    int iterations = 0;
     int startNdx = start(threadId);
     int endNdx = end(threadId);
 
-
     const int dataSize = x->n;
     int *batchIndexArray;
-
     //holds the values for indexes of batches
     batchIndexArray = new int[dataSize];
 
@@ -39,32 +37,28 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
     }
 
     double *centerMembersCount = new double[k]{0};
-
     Dataset *oldCenters = new Dataset(k, x->d);
 
-    centersFile.open ("centersAll.txt");
-   centersFile<<k<<"\n";
-
+    //starting the outer iterations
     for (int run = 0; run < totalMinibatchIterations; run++) {
 
-        centersFile<<run+1<<"\n";
-
         //fisher yates algorithm to generate batches.
-        for (int i=0;i<batchSize;i++){
-            int j = i + (rand() % (dataSize-i));
-            std::swap(batchIndexArray[i],batchIndexArray[j]);
+        for (int i = 0; i < batchSize; i++) {
+            int j = i + (rand() % (dataSize - i));
+            std::swap(batchIndexArray[i], batchIndexArray[j]);
         }
 
         converged = false;
 
         //this is the inner iteration which denotes number of times the same batch is run
         iterations = 0;
-
-        int multiplier = pow(maxIterations,1);
+        float multiplier = pow(maxIterations, scalingFactor);
 
         while ((iterations < maxIterations) && (!converged)) {
             ++iterations;
             int dataIndex;
+
+            update_s(threadId);
 
             for (int i = 0; i < batchSize; i++) {
                 dataIndex = batchIndexArray[i];
@@ -131,59 +125,42 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
 
             synchronizeAllThreads();
 
+            for (int i=0;i<k;i++){
+                for (int j = 0; j < d; j++) {
+                    oldCenters->data[i*d + j] = centers->data[i*d+j];
+                }
+            }
 
             for (int i = 0; i < batchSize; i++) {
 
                 int dataIdx = batchIndexArray[i];
                 int c = assignment[dataIdx];
-                centerMembersCount[c] = centerMembersCount[c] + (double)1/(multiplier);
-                //centerMembersCount[c] = centerMembersCount[c] + 1;
-                double eta = (double)1 / centerMembersCount[c];
+
+                centerMembersCount[c] = centerMembersCount[c] + (double) 1 / (multiplier);
+                double eta = (double) 1 / (centerMembersCount[c]);
+
                 for (int j = 0; j < d; j++) {
-                    //(*centers)(c,j) = (1 - eta) * (*centers)(c,j) + eta * x->data[indexArray[i] + j];
-                    centers->data[c*d + j] = (1 - eta) * centers->data[c * d + j] + eta * x->data[dataIdx * d + j];
+                    centers->data[c * d + j] = (1 - eta) * centers->data[c * d + j] + eta * x->data[dataIdx * d + j];
                 }
 
             }
 
-/*
-            if (threadId == 0) {
-                //checking whether centers moved
-                int furthestMovingCenter = move_centers();
-                converged = (0.0 == centerMovement[furthestMovingCenter]);
+            for (int i=0;i<k;i++){
+                double tempSum = 0.0;
+                for (int j = 0; j < d; j++) {
+                    tempSum+= pow((oldCenters->data[i*d + j] - centers->data[i*d+j]),2);
+                }
+                centerMovement[i] = sqrt(tempSum);
             }
-*/
 
             if (!converged) {
                 update_bounds(batchIndexArray);
             }
 
-
             synchronizeAllThreads();
-
-
         }
-
-        //sending centers to a file
-
-
-        for (int i=0;i<k;i++){
-            for (int j=0;j<d;j++){
-                centersFile<<centers->data[i*d + j];
-                if (j!=d-1)
-                    centersFile<<",";
-            }
-            centersFile<<"\n";
-        }
-
-
-        //std::cout<<iterations<<" , ";
 
     }
-    centersFile.close();
-    std::cout<<"\n \n ";
-
-    /*
 
     for (int i = startNdx; i < endNdx; ++i) {
         // look for the closest center to this example
@@ -201,22 +178,16 @@ int MiniBatchKMeans::runThread(int threadId, int maxIterations) {
         }
     }
 
-     */
-
-
-
     delete oldCenters;
 
     delete[] centerMembersCount;
 
     delete[] batchIndexArray;
 
-
     return iterations;
 }
 
 void MiniBatchKMeans::update_bounds(int *indexArray) {
-    // int batchSize = 400;
     double longest = centerMovement[0], secondLongest = (1 < k) ? centerMovement[1] : centerMovement[0];
     int furthestMovingCenter = 0;
 
@@ -250,9 +221,3 @@ void MiniBatchKMeans::update_bounds(int *indexArray) {
     }
 }
 
-/*
-void MiniBatchKMeans::swap(int *val1, int *val2) {
-    int temp = *val1;
-    *val1 = *val2;
-    *val2 = temp;
-}*/

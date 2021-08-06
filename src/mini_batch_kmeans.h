@@ -20,10 +20,12 @@ class MiniBatchKMeans : public TriangleInequalityBaseKmeans {
 
 public:
 
-    MiniBatchKMeans(int a, int b) {
+    MiniBatchKMeans(int a, int b, int c) {
         numLowerBounds = 1;
         batchSize = a;
         totalMinibatchIterations = b;
+        scalingFactor = c;
+
         //std::cout<<"in mini constructor";
     }
 
@@ -34,6 +36,7 @@ public:
 protected:
     int batchSize;
     int totalMinibatchIterations;
+    int scalingFactor;
 
     void update_bounds(int *indexArray);
 
