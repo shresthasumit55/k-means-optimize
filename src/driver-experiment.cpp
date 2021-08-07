@@ -93,6 +93,9 @@ int main(int argc, char **argv) {
     int numThreads = 1;
     int maxIterations = std::numeric_limits<int>::max();
 
+
+
+
     // Print header row
     std::cout << std::setw(35) << "algorithm" << "\t"
               << std::setw(5) << "iters" << "\t"
@@ -214,7 +217,9 @@ int main(int argc, char **argv) {
             std::cin>>batchSize;
             int totalMinibatchIterations; //number of times random batch is generated
             std::cin>>totalMinibatchIterations;
-            algorithm = new MiniBatchKMeans(batchSize,totalMinibatchIterations);
+            int multiplier;
+            std::cin>>multiplier;
+            algorithm = new MiniBatchKMeans(batchSize,totalMinibatchIterations,multiplier);
         } else if (command =="naiveminibatch"){
             int batchSize;
             std::cin>>batchSize;
@@ -281,7 +286,7 @@ int main(int argc, char **argv) {
             centerDataset(x);
         } else if (command == "dump_assignment") {
             if (outAssignment) {
-                for (int i = 0; i < x->n; ++i) {
+                for (int i = 0; i < 20; ++i) {
                     std::cout << outAssignment[i] << std::endl;
                 }
             } else {
@@ -328,6 +333,7 @@ void execute(std::string command, Kmeans *algorithm, Dataset const *x, unsigned 
         , std::vector<double> *sseHistory
         #endif
         ) {
+
     // Check for missing initialization
     if (assignment == NULL) {
         std::cerr << "initialize centers first!" << std::endl;
@@ -393,6 +399,7 @@ void execute(std::string command, Kmeans *algorithm, Dataset const *x, unsigned 
             std::cerr << "ERROR: sse = " << sse << " but last SSE was " << sseHistory->back() << std::endl;
         }
     }
+
     #endif
     #ifdef COUNT_DISTANCES
     {
